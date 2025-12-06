@@ -1,0 +1,28 @@
+# XTDB v2 Configuration for VEDS
+# Bitemporal database for constraints, decisions, and audit trail
+
+server:
+  port: 3000
+
+storage:
+  # Local storage for development
+  type: local
+  path: /var/lib/xtdb/objects
+
+txLog:
+  # Local transaction log
+  type: local
+  path: /var/lib/xtdb/txlog
+
+indexer:
+  # Index configuration
+  flushDuration: PT5S
+  rowsPerChunk: 102400
+
+# HTTP module
+modules:
+  http-server:
+    port: 3000
+
+  # Enable SQL for compatibility queries
+  sql: {}

@@ -1,0 +1,78 @@
+[package]
+name = "veds-optimizer"
+version = "0.1.0"
+edition = "2021"
+authors = ["Jonathan D.A. Jewell", "VEDS Team"]
+description = "High-performance multimodal route optimizer for VEDS"
+license = "MIT OR AGPL-3.0"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.35", features = ["full"] }
+
+# Graph algorithms
+petgraph = "0.6"
+pathfinding = "4.9"
+
+# Parallel processing
+rayon = "1.8"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# gRPC
+tonic = "0.10"
+prost = "0.12"
+
+# HTTP client for SurrealDB
+reqwest = { version = "0.11", features = ["json"] }
+
+# Redis/Dragonfly client
+redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
+
+# Database clients
+surrealdb = { version = "1.5", features = ["protocol-ws"] }
+
+# Decimal for money
+rust_decimal = { version = "1.33", features = ["serde"] }
+
+# UUID
+uuid = { version = "1.6", features = ["v4", "serde"] }
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Config
+config = "0.14"
+dotenvy = "0.15"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Metrics
+prometheus = "0.13"
+
+# HTTP server for metrics
+axum = "0.7"
+
+[build-dependencies]
+tonic-build = "0.10"
+
+[dev-dependencies]
+tokio-test = "0.4"
+criterion = "0.5"
+
+[[bench]]
+name = "routing_benchmark"
+harness = false
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
