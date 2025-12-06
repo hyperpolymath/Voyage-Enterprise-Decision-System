@@ -1,0 +1,21 @@
+;; VEDS Constraint Engine Configuration
+{:veds/xtdb
+ {:url #or [#env XTDB_URL "http://localhost:3000"]}
+
+ :veds/redis
+ {:host #or [#env DRAGONFLY_HOST "localhost"]
+  :port #long #or [#env DRAGONFLY_PORT "6379"]
+  :password #env DRAGONFLY_PASS}
+
+ :veds/http
+ {:port #long #or [#env HTTP_PORT "8080"]
+  :handler #ig/ref :veds/handler}
+
+ :veds/handler
+ {:xtdb #ig/ref :veds/xtdb
+  :redis #ig/ref :veds/redis}
+
+ :veds/sync-worker
+ {:xtdb #ig/ref :veds/xtdb
+  :redis #ig/ref :veds/redis
+  :interval-ms #long #or [#env SYNC_INTERVAL_MS "300000"]}} ;; 5 minutes

@@ -1,0 +1,56 @@
+{:paths ["src" "resources"]
+
+ :deps {;; Clojure core
+        org.clojure/clojure {:mvn/version "1.11.1"}
+
+        ;; XTDB v2
+        com.xtdb/xtdb-core {:mvn/version "2.0.0-beta7"}
+        com.xtdb/xtdb-http-client {:mvn/version "2.0.0-beta7"}
+
+        ;; HTTP server
+        ring/ring-core {:mvn/version "1.11.0"}
+        ring/ring-jetty-adapter {:mvn/version "1.11.0"}
+        metosin/reitit {:mvn/version "0.7.0-alpha7"}
+
+        ;; JSON
+        metosin/jsonista {:mvn/version "0.3.8"}
+
+        ;; Redis/Dragonfly client
+        com.taoensso/carmine {:mvn/version "3.3.2"}
+
+        ;; Logging
+        org.clojure/tools.logging {:mvn/version "1.2.4"}
+        ch.qos.logback/logback-classic {:mvn/version "1.4.14"}
+
+        ;; Configuration
+        aero/aero {:mvn/version "1.1.6"}
+
+        ;; Component lifecycle
+        integrant/integrant {:mvn/version "0.8.1"}
+
+        ;; Spec for validation
+        org.clojure/spec.alpha {:mvn/version "0.3.218"}
+
+        ;; Async
+        org.clojure/core.async {:mvn/version "1.6.681"}
+
+        ;; Time
+        clojure.java-time/clojure.java-time {:mvn/version "1.4.2"}}
+
+ :aliases
+ {:dev {:extra-paths ["dev"]
+        :extra-deps {integrant/repl {:mvn/version "0.3.3"}}}
+
+  :test {:extra-paths ["test"]
+         :extra-deps {lambdaisland/kaocha {:mvn/version "1.87.1366"}}}
+
+  :run {:main-opts ["-m" "veds.constraints.main"]}
+
+  :build {:deps {io.github.clojure/tools.build {:mvn/version "0.9.6"}}
+          :ns-default build}
+
+  :uberjar {:replace-deps {com.github.seancorfield/depstar {:mvn/version "2.1.303"}}
+            :exec-fn hf.depstar/uberjar
+            :exec-args {:aot true
+                        :jar "target/veds-constraints.jar"
+                        :main-class veds.constraints.main}}}}

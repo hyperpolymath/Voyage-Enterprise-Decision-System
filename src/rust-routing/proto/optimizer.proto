@@ -1,0 +1,134 @@
+syntax = "proto3";
+
+package veds.optimizer;
+
+// Route Optimization Service
+service OptimizerService {
+    // Optimize routes for a shipment
+    rpc OptimizeRoutes(OptimizeRequest) returns (OptimizeResponse);
+
+    // Evaluate constraints for a specific route
+    rpc EvaluateConstraints(EvaluateRequest) returns (EvaluateResponse);
+
+    // Get the transport graph status
+    rpc GetGraphStatus(GraphStatusRequest) returns (GraphStatusResponse);
+
+    // Reload the transport graph from database
+    rpc ReloadGraph(ReloadGraphRequest) returns (ReloadGraphResponse);
+}
+
+// Optimization Request
+message OptimizeRequest {
+    string shipment_id = 1;
+    string origin_port = 2;      // UN/LOCODE
+    string destination_port = 3; // UN/LOCODE
+    double weight_kg = 4;
+    double volume_m3 = 5;
+    string pickup_after = 6;     // ISO 8601 datetime
+    string deliver_by = 7;       // ISO 8601 datetime
+
+    // Constraints
+    optional double max_cost_usd = 10;
+    optional double max_carbon_kg = 11;
+    optional double min_labor_score = 12;
+    repeated string allowed_modes = 13;      // Empty = all allowed
+    repeated string excluded_carriers = 14;
+
+    // Optimization parameters
+    int32 max_routes = 20;       // Max candidate routes to return
+    int32 max_segments = 21;     // Max segments per route
+
+    // Weights for multi-objective scoring (should sum to 1.0)
+    double cost_weight = 30;
+    double time_weight = 31;
+    double carbon_weight = 32;
+    double labor_weight = 33;
+}
+
+message OptimizeResponse {
+    bool success = 1;
+    string error_message = 2;
+    repeated Route routes = 3;
+    int64 optimization_time_ms = 4;
+    int32 candidates_evaluated = 5;
+}
+
+message Route {
+    string route_id = 1;
+    repeated Segment segments = 2;
+    double total_cost_usd = 3;
+    double total_time_hours = 4;
+    double total_carbon_kg = 5;
+    double total_distance_km = 6;
+    double labor_score = 7;
+    int32 pareto_rank = 8;
+    bool pareto_optimal = 9;
+    double weighted_score = 10;
+    repeated ConstraintResult constraint_results = 11;
+}
+
+message Segment {
+    string segment_id = 1;
+    int32 sequence = 2;
+    string from_node = 3;
+    string to_node = 4;
+    string mode = 5;            // MARITIME, RAIL, ROAD, AIR
+    string carrier_code = 6;
+    double distance_km = 7;
+    double cost_usd = 8;
+    double transit_hours = 9;
+    double carbon_kg = 10;
+    int32 carrier_wage_cents = 11;
+    string departure_time = 12;  // ISO 8601
+    string arrival_time = 13;    // ISO 8601
+}
+
+message ConstraintResult {
+    string constraint_id = 1;
+    string constraint_type = 2;  // WAGE, CARBON, TIME, COST, SANCTION
+    bool passed = 3;
+    bool is_hard = 4;           // Hard constraint = must pass
+    double score = 5;           // 0.0 - 1.0 for soft constraints
+    string message = 6;
+}
+
+// Constraint Evaluation Request
+message EvaluateRequest {
+    string route_id = 1;
+    Route route = 2;
+    repeated string constraint_ids = 3;  // Empty = evaluate all
+}
+
+message EvaluateResponse {
+    bool success = 1;
+    bool all_hard_passed = 2;
+    double overall_score = 3;
+    repeated ConstraintResult results = 4;
+}
+
+// Graph Status
+message GraphStatusRequest {}
+
+message GraphStatusResponse {
+    int64 node_count = 1;
+    int64 edge_count = 2;
+    string last_loaded = 3;     // ISO 8601
+    int64 load_time_ms = 4;
+    repeated ModeCount mode_counts = 5;
+}
+
+message ModeCount {
+    string mode = 1;
+    int64 count = 2;
+}
+
+// Reload Graph
+message ReloadGraphRequest {
+    bool force = 1;  // Force reload even if recent
+}
+
+message ReloadGraphResponse {
+    bool success = 1;
+    string message = 2;
+    int64 load_time_ms = 3;
+}
