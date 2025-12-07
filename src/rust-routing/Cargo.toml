@@ -32,7 +32,7 @@ reqwest = { version = "0.11", features = ["json"] }
 redis = { version = "0.24", features = ["tokio-comp", "connection-manager"] }
 
 # Database clients
-surrealdb = { version = "1.5", features = ["protocol-ws"] }
+surrealdb = { version = "2.4", features = ["protocol-ws"] }
 
 # Decimal for money
 rust_decimal = { version = "1.33", features = ["serde"] }
