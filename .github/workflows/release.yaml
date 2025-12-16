@@ -16,7 +16,7 @@ jobs:
       contents: write
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -34,7 +34,7 @@ jobs:
 
       # Build and push all service images with version tag
       - name: Build rust-optimizer
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: src/rust-routing
           push: true
@@ -43,7 +43,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/veds-rust-optimizer:latest
 
       - name: Build elixir-api
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: src/elixir-api
           push: true
@@ -52,7 +52,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/veds-elixir-api:latest
 
       - name: Build clojure-constraints
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: src/clojure-constraints
           push: true
@@ -61,7 +61,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/veds-clojure-constraints:latest
 
       - name: Build julia-viz
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: src/julia-viz
           push: true
@@ -76,7 +76,7 @@ jobs:
           sed -i "s/newTag:.*/newTag: v${{ steps.version.outputs.VERSION }}/" kustomization.yaml
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
