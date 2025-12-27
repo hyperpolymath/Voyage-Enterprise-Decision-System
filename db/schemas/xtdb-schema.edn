@@ -1,0 +1,202 @@
+;; SPDX-License-Identifier: MIT OR AGPL-3.0
+;; VEDS XTDB Schema Definitions
+;; Bitemporal data model for constraints, decisions, and audit trail
+
+{:schema/version "1.0.0"
+ :schema/description "VEDS Constraint and Decision Schema for XTDB v2"
+
+ ;; =============================================================================
+ ;; CONSTRAINT DEFINITIONS
+ ;; =============================================================================
+
+ :constraint/schema
+ {:xt/id {:type :keyword :doc "Constraint ID (e.g., :constraint/min-wage-usa)"}
+  :constraint/id {:type :string :required true :doc "Human-readable ID"}
+  :constraint/type {:type :keyword
+                    :required true
+                    :enum [:wage :carbon :time :cost :sanction :safety :hours :custom]
+                    :doc "Category of constraint"}
+  :constraint/name {:type :string :required true :doc "Display name"}
+  :constraint/description {:type :string :doc "Full description"}
+  :constraint/hard? {:type :boolean :required true :default false
+                     :doc "Hard constraints must be satisfied; soft constraints are preferences"}
+  :constraint/active? {:type :boolean :default true :doc "Whether constraint is active"}
+  :constraint/priority {:type :long :default 100 :doc "Evaluation priority (lower = higher priority)"}
+  :constraint/params {:type :map :doc "Parameters for constraint evaluation"}
+  :constraint/datalog-rule {:type :vector :doc "Datalog query for violation detection"}
+  :constraint/scope {:type :keyword :enum [:global :customer :shipment :route]
+                     :default :global :doc "Scope of constraint application"}
+  :constraint/effective-from {:type :inst :doc "When constraint becomes effective"}
+  :constraint/effective-until {:type :inst :doc "When constraint expires"}
+  :constraint/created-at {:type :inst :doc "Creation timestamp"}
+  :constraint/updated-at {:type :inst :doc "Last update timestamp"}
+  :constraint/created-by {:type :string :doc "User who created the constraint"}}
+
+ ;; =============================================================================
+ ;; CONSTRAINT EVALUATION RESULTS
+ ;; =============================================================================
+
+ :evaluation/schema
+ {:xt/id {:type :keyword :doc "Evaluation ID"}
+  :evaluation/constraint-id {:type :string :required true}
+  :evaluation/route-id {:type :string :required true}
+  :evaluation/shipment-id {:type :string}
+  :evaluation/passed? {:type :boolean :required true}
+  :evaluation/hard? {:type :boolean :required true}
+  :evaluation/score {:type :double :doc "Score from 0.0 to 1.0"}
+  :evaluation/violations {:type :vector :doc "List of violation details"}
+  :evaluation/context {:type :map :doc "Evaluation context data"}
+  :evaluation/evaluated-at {:type :inst :required true}
+  :evaluation/evaluator {:type :string :doc "System/user that performed evaluation"}}
+
+ ;; =============================================================================
+ ;; DECISION RECORDS
+ ;; =============================================================================
+
+ :decision/schema
+ {:xt/id {:type :keyword :doc "Decision ID"}
+  :decision/id {:type :string :required true}
+  :decision/type {:type :keyword
+                  :required true
+                  :enum [:route-selection :constraint-override :carrier-approval :rate-approval]
+                  :doc "Type of decision"}
+  :decision/status {:type :keyword
+                    :required true
+                    :enum [:pending :approved :rejected :expired]
+                    :default :pending}
+  :decision/shipment-id {:type :string}
+  :decision/route-id {:type :string}
+  :decision/constraint-id {:type :string :doc "For override decisions"}
+  :decision/requested-by {:type :string :required true}
+  :decision/decided-by {:type :string}
+  :decision/justification {:type :string :doc "Reason for decision"}
+  :decision/evidence {:type :map :doc "Supporting evidence/data"}
+  :decision/alternatives {:type :vector :doc "Other options considered"}
+  :decision/requested-at {:type :inst :required true}
+  :decision/decided-at {:type :inst}
+  :decision/expires-at {:type :inst :doc "When decision authority expires"}
+  :decision/impact {:type :map :doc "Projected impact of decision"}}
+
+ ;; =============================================================================
+ ;; CONSTRAINT TEMPLATES (Predefined rules)
+ ;; =============================================================================
+
+ :templates
+ [{:template/id "min-wage"
+   :template/name "Minimum Wage Compliance"
+   :template/type :wage
+   :template/hard? true
+   :template/description "Ensure carrier wages meet country minimum"
+   :template/params-schema {:min-wage-cents {:type :long :required true}}
+   :template/datalog
+   [:find ?segment ?violation
+    :in $ ?route-id ?min-wage
+    :where
+    [?route :route/id ?route-id]
+    [?route :route/segments ?segment]
+    [?segment :segment/carrier-wage-cents ?wage]
+    [(< ?wage ?min-wage)]
+    [(identity {:segment ?segment :wage ?wage :min ?min-wage}) ?violation]]}
+
+  {:template/id "carbon-budget"
+   :template/name "Carbon Budget Limit"
+   :template/type :carbon
+   :template/hard? false
+   :template/description "Total carbon emissions under budget"
+   :template/params-schema {:max-carbon-kg {:type :double :required true}}
+   :template/datalog
+   [:find ?route ?total-carbon
+    :in $ ?route-id ?budget
+    :where
+    [?route :route/id ?route-id]
+    [?route :route/total-carbon-kg ?total-carbon]
+    [(> ?total-carbon ?budget)]]}
+
+  {:template/id "delivery-deadline"
+   :template/name "Delivery Time Window"
+   :template/type :time
+   :template/hard? true
+   :template/description "Must arrive before deadline"
+   :template/params-schema {:deadline {:type :inst :required true}}
+   :template/datalog
+   [:find ?route ?arrival
+    :in $ ?route-id ?deadline
+    :where
+    [?route :route/id ?route-id]
+    [?route :route/arrival-time ?arrival]
+    [(> ?arrival ?deadline)]]}
+
+  {:template/id "no-sanctioned-carriers"
+   :template/name "Sanctions Compliance"
+   :template/type :sanction
+   :template/hard? true
+   :template/description "No sanctioned carriers allowed"
+   :template/params-schema {:sanctioned-list {:type :set :required true}}
+   :template/datalog
+   [:find ?segment ?carrier
+    :in $ ?route-id ?sanctioned
+    :where
+    [?route :route/id ?route-id]
+    [?route :route/segments ?segment]
+    [?segment :segment/carrier-code ?carrier]
+    [(contains? ?sanctioned ?carrier)]]}
+
+  {:template/id "safety-rating"
+   :template/name "Minimum Safety Rating"
+   :template/type :safety
+   :template/hard? false
+   :template/description "Carriers must meet minimum safety rating"
+   :template/params-schema {:min-rating {:type :long :required true :min 1 :max 5}}
+   :template/datalog
+   [:find ?segment ?rating
+    :in $ ?route-id ?min-rating
+    :where
+    [?route :route/id ?route-id]
+    [?route :route/segments ?segment]
+    [?segment :segment/carrier-safety-rating ?rating]
+    [(< ?rating ?min-rating)]]}
+
+  {:template/id "max-transit-hours"
+   :template/name "Maximum Transit Time"
+   :template/type :time
+   :template/hard? false
+   :template/description "Total transit under time limit"
+   :template/params-schema {:max-hours {:type :double :required true}}
+   :template/datalog
+   [:find ?route ?transit
+    :in $ ?route-id ?max-hours
+    :where
+    [?route :route/id ?route-id]
+    [?route :route/total-transit-hours ?transit]
+    [(> ?transit ?max-hours)]]}
+
+  {:template/id "union-preference"
+   :template/name "Union Carrier Preference"
+   :template/type :wage
+   :template/hard? false
+   :template/description "Prefer unionized carriers (soft constraint)"
+   :template/params-schema {:union-bonus {:type :double :default 0.1}}
+   :template/datalog
+   [:find ?segment ?bonus
+    :in $ ?route-id ?bonus
+    :where
+    [?route :route/id ?route-id]
+    [?route :route/segments ?segment]
+    [?segment :segment/carrier-unionized true]
+    [(identity ?bonus) ?bonus]]}]
+
+ ;; =============================================================================
+ ;; INDICES
+ ;; =============================================================================
+
+ :indices
+ [{:index/name "constraints-by-type"
+   :index/on :constraint/type}
+  {:index/name "constraints-active"
+   :index/on :constraint/active?}
+  {:index/name "evaluations-by-route"
+   :index/on :evaluation/route-id}
+  {:index/name "decisions-by-status"
+   :index/on :decision/status}
+  {:index/name "decisions-by-shipment"
+   :index/on :decision/shipment-id}]}

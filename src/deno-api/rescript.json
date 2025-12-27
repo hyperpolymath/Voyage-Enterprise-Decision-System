@@ -1,0 +1,21 @@
+{
+  "name": "veds-api",
+  "sources": [
+    {
+      "dir": "src",
+      "subdirs": true
+    }
+  ],
+  "package-specs": [
+    {
+      "module": "esmodule",
+      "in-source": true
+    }
+  ],
+  "suffix": ".res.js",
+  "bs-dependencies": [],
+  "bsc-flags": ["-open Belt"],
+  "warnings": {
+    "number": "+A-4-42-44-48"
+  }
+}
