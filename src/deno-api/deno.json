@@ -1,0 +1,39 @@
+{
+  "$schema": "https://deno.land/x/deno/cli/schemas/config-file.v1.json",
+  "name": "@veds/api",
+  "version": "0.1.0",
+  "exports": "./src/main.ts",
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --allow-read --watch src/main.ts",
+    "start": "deno run --allow-net --allow-env --allow-read src/main.ts",
+    "build:rescript": "rescript build -with-deps",
+    "clean:rescript": "rescript clean -with-deps",
+    "test": "deno test --allow-net --allow-env --allow-read"
+  },
+  "imports": {
+    "@std/http": "jsr:@std/http@^1.0.0",
+    "@std/json": "jsr:@std/json@^1.0.0",
+    "@std/async": "jsr:@std/async@^1.0.0",
+    "@std/uuid": "jsr:@std/uuid@^1.0.0",
+    "@grpc/grpc-js": "npm:@grpc/grpc-js@^1.9.0",
+    "@grpc/proto-loader": "npm:@grpc/proto-loader@^0.7.0",
+    "surrealdb": "npm:surrealdb@^1.0.0",
+    "ioredis": "npm:ioredis@^5.3.0"
+  },
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "lib": ["deno.window", "esnext"]
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "singleQuote": true
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  }
+}

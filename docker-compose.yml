@@ -91,25 +91,24 @@ services:
     networks:
       - veds-network
 
-  # Elixir/Phoenix API Gateway
-  elixir-api:
+  # Deno API Gateway (MVP spine - replaces Elixir/Phoenix per language policy)
+  deno-api:
     build:
-      context: ./src/elixir-api
+      context: ./src/deno-api
       dockerfile: Dockerfile
     container_name: veds-api
     ports:
-      - "4000:4000"     # HTTP/WebSocket
+      - "4000:4000"     # HTTP API
     environment:
-      - MIX_ENV=dev
-      - PHX_HOST=localhost
-      - SECRET_KEY_BASE=dev_secret_key_base_must_be_at_least_64_bytes_long_for_security
-      - XTDB_URL=https://xtdb:3000
+      - PORT=4000
+      - HOST=0.0.0.0
+      - XTDB_URL=http://xtdb:3000
       - SURREALDB_URL=ws://surrealdb:8000
       - SURREALDB_USER=root
       - SURREALDB_PASS=veds_dev_password
       - DRAGONFLY_URL=redis://dragonfly:6379
       - DRAGONFLY_PASS=veds_dev_password
-      - OPTIMIZER_URL=https://rust-optimizer:50051
+      - OPTIMIZER_URL=http://rust-optimizer:50051
     depends_on:
       xtdb:
         condition: service_healthy
@@ -117,28 +116,31 @@ services:
         condition: service_healthy
       dragonfly:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - veds-network
 
-  # Clojure Constraint Engine
-  clojure-constraints:
-    build:
-      context: ./src/clojure-constraints
-      dockerfile: Dockerfile
-    container_name: veds-constraints
-    ports:
-      - "8080:8080"     # HTTP API
-    environment:
-      - XTDB_URL=https://xtdb:3000
-      - DRAGONFLY_URL=redis://dragonfly:6379
-      - DRAGONFLY_PASS=veds_dev_password
-    depends_on:
-      xtdb:
-        condition: service_healthy
-      dragonfly:
-        condition: service_healthy
-    networks:
-      - veds-network
+  # Legacy: Elixir/Phoenix API Gateway (disabled - replaced by Deno API)
+  # elixir-api:
+  #   build:
+  #     context: ./src/elixir-api
+  #     dockerfile: Dockerfile
+  #   container_name: veds-api-legacy
+  #   profiles:
+  #     - legacy
+
+  # Legacy: Clojure Constraint Engine (disabled - constraints now in ReScript DSL)
+  # clojure-constraints:
+  #   build:
+  #     context: ./src/clojure-constraints
+  #     dockerfile: Dockerfile
+  #   container_name: veds-constraints-legacy
+  #   profiles:
+  #     - legacy
 
   # Julia Analytics (optional - resource intensive)
   julia-viz:
